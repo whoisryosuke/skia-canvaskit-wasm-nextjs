@@ -1,53 +1,54 @@
-import { CanvasKit, Canvas } from 'canvaskit-wasm';
-import React from 'react'
-const CanvasKitInit = require('canvaskit-wasm/bin/canvaskit.js')
-type Props = {}
+import type { CanvasKit } from 'canvaskit-wasm';
+import React, { useCallback, useEffect } from 'react'
+import { useCanvasKit } from '../context/useCanvasKit';
+type Props = {
+    colors?: Partial<keyof CanvasKit>[];
+}
 
-const Test = (props: Props) => {
-    console.log('CanvasKitInit', CanvasKitInit)
+const Test = ({colors = ['RED', 'GREEN', 'BLUE']}: Props) => {
 
-    const startCanvas = async () => {
-        const ctx: CanvasKit = await CanvasKitInit({
-            locateFile: (file: string): string => `https://unpkg.com/canvaskit-wasm@0.35.0/bin/${file}`,
-        })
-    
-        // console.log('surface', ctx.MakeWebGLCanvasSurface, Object.keys(ctx))
+    const { context, surface, canvas } = useCanvasKit();
 
-    const surface = ctx.MakeWebGLCanvasSurface('paths');
-    if (!surface) {
-      console.error('Could not make surface');
-      return;
-    }
-    const canvas = surface.getCanvas();
-    let paint = new ctx.Paint();
+    console.log('canvas kit', context, surface, canvas)
 
-    // See https://fiddle.skia.org/c/f48b22eaad1bb7adcc3faaa321754af6
-    // for original c++ version.
-    let colors = [ctx.BLUE, ctx.YELLOW, ctx.RED];
-    let pos =    [0, .7, 1.0];
-    let transform = [2, 0, 0,
-                     0, 2, 0,
-                     0, 0, 1];
-    let shader = ctx.Shader.MakeRadialGradient([150, 150], 130, colors,
-                              pos, ctx.TileMode.Mirror, transform);
+    const startCanvas = useCallback(async () => {
+        if(!context || !canvas || !surface) return;
 
-    paint.setShader(shader);
-    const textFont = new ctx.Font(null, 75);
-    const textBlob = ctx.TextBlob.MakeFromText('Radial', textFont);
+        console.log('DRAWING Paint process')
+        let paint = new context.Paint();
 
-    canvas.drawTextBlob(textBlob, 10, 200, paint);
-    paint.delete();
-    textFont.delete();
-    textBlob.delete();
-    surface.flush();
+        // See https://fiddle.skia.org/c/f48b22eaad1bb7adcc3faaa321754af6
+        // for original c++ version.
+        // let colors = [context.BLUE, context.YELLOW, context.RED];
+        let colorMap = colors.map(color => context[color]);
+        let pos =    [0, .7, 1.0];
+        let transform = [2, 0, 0,
+                        0, 2, 0,
+                        0, 0, 1];
+        let shader = context.Shader.MakeRadialGradient([150, 150], 130, colorMap,
+                                pos, context.TileMode.Mirror, transform);
 
-    }
+        paint.setShader(shader);
+        const textFont = new context.Font(null, 75);
+        const textBlob = context.TextBlob.MakeFromText('Radial', textFont);
 
-    startCanvas();
+        canvas.drawTextBlob(textBlob, 10, 200, paint);
+
+        paint.delete();
+        textFont.delete();
+        textBlob.delete();
+        surface.flush();
+
+    }, [context, surface, canvas, colors])
+
+    useEffect(() => {
+        console.log('DRAWING TEST')
+        startCanvas();
+    }, [startCanvas, colors])
 
 
   return (
-    <canvas id="paths" width={200} height={200}></canvas>
+    <canvas id="canvaskit" width={600} height={200}></canvas>
   )
 }
 
