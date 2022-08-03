@@ -20,7 +20,8 @@ const Test = ({colors = ['RED', 'GREEN', 'BLUE']}: Props) => {
         // See https://fiddle.skia.org/c/f48b22eaad1bb7adcc3faaa321754af6
         // for original c++ version.
         // let colors = [context.BLUE, context.YELLOW, context.RED];
-        let colorMap = colors.map(color => context[color]);
+        let colorMap = colors.map(color => context[color]).filter(x => x !== undefined) as Float32Array[];
+        if(!colorMap) return;
         let pos =    [0, .7, 1.0];
         let transform = [2, 0, 0,
                         0, 2, 0,
